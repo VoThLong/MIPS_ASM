@@ -3,100 +3,171 @@ array1: .word   5, 6, 7, 8, 1, 2, 3, 9, 10, 4
 size1: .word   10
 array2:.byte   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
 size2: .word   16
-array3: .space  8
+
+# <<< PHẦN SỬA 1: SỬA LỖI TRONG FILE ĐỀ BÀI >>>
+# Yêu cầu của đề là array3[i] = array2[i] + array2[15-i] (byte + byte)
+# Kết quả của (byte + byte) có thể lớn hơn 255, nên PHẢI lưu bằng .word (4 bytes)
+# Vì size3 = 8, nên ta cần 8 (phần tử) * 4 bytes = 32 bytes
+array3: .space  32
 size3:  .word   8
 
 .text
 .globl main
 main:
+# --- Khởi tạo các thanh ghi ---
+la $s0, array1      # Con trỏ array1
+la $s1, array2      # Con trỏ array2
+la $s2, array3      # Con trỏ array3 (sẽ dùng sau)
+li $t0, 0           # $t0 = biến đếm i cho loop1
+li $t1, 0           # $t1 = biến đếm i cho loop2
+li $t2, 0           # $t2 = biến đếm i cho loop3
+lw $t4, size1       # $t4 = 10
+lw $t5, size2       # $t5 = 16
+lw $t6, size3       # $t6 = 8
 
-la $s0, array1      # Load address of array1
-la $s1, array2      # Load address of array2
-la $s2, array3      # Load address of array3
-add $t0, $zero, $zero
-add $t1, $zero, $zero 
-add $t2, $zero, $zero 
-lw $t4, size1
-lw $t5, size2
-lw $t6, size3
-
-
+# --- Yêu cầu 1: In array1 ---
 loop1:
-    beq $t0, $t4, end_loop1   # Check if we have processed all elements of array1
+    beq $t0, $t4, end_loop1   # Dừng khi i == 10
 
-    lw $t3, 0($s0)               # Load element from array1
-    move $a0, $t3               # Move element to $a0 for printing
-    li $v0, 1                   # Print integer syscall
+    lw $t3, 0($s0)            # Load word (4 bytes)
+    move $a0, $t3
+    li $v0, 1
     syscall
     
-    li $a0, 32
+    li $a0, 32                # In dấu cách
     li $v0, 11
     syscall
 
-    addi $s0, $s0, 4            # Move to the next element in array1
-    addi $t0, $t0, 1            # Increment counter
-    j loop1                      # Repeat the loop
+    addi $s0, $s0, 4          # Nhảy 4 bytes
+    addi $t0, $t0, 1          # i++
+    j loop1
 end_loop1:
 
-li $a0, 10      # Nạp mã ASCII của '\n' (Line Feed) vào $a0
-li $v0, 11      # syscall code for print_character
+li $a0, 10      # In ký tự xuống dòng
+li $v0, 11
 syscall
 
+# --- Yêu cầu 1: In array2 ---
 loop2:
-    beq $t1, $t5, end_loop2   # Check if we have processed all elements of array2
+    beq $t1, $t5, end_loop2   # Dừng khi i == 16
 
-    lb $t3, 0($s1)               # Load element from array2
-    move $a0, $t3               # Move element to $a0 for printing
-    li $v0, 1                   # Print integer syscall
+    lb $t3, 0($s1)            # Load byte (1 byte)
+    move $a0, $t3
+    li $v0, 1
     syscall
     
-    li $a0, 32
+    li $a0, 32                # In dấu cách
     li $v0, 11
     syscall
 
-    addi $s1, $s1, 1            # Move to the next element in array1
-    addi $t1, $t1, 1            # Increment counter
-    j loop2                      # Repeat the loop
+    addi $s1, $s1, 1          # Nhảy 1 byte
+    addi $t1, $t1, 1          # i++
+    j loop2
 end_loop2:
 
-li $a0, 10      # Nạp mã ASCII của '\n' (Line Feed) vào $a0
-li $v0, 11      # syscall code for print_character
+li $a0, 10      # In ký tự xuống dòng
+li $v0, 11
 syscall
 
-la $s0, array1      # Load address of array1
-la $s1, array2 + 15      # Load address of array2
-la $s2, array3      # Load address of array3
+# --- <<< PHẦN SỬA 2: VIẾT LẠI HOÀN TOÀN LOOP3 VÀ LOOP4 >>> ---
+# Yêu cầu 2: Gán array3[i] = array2[i] + array2[size2-1-i]
 
-loop3:
-    beq $t2, $t6, end_loop3   # Check if we have processed all elements of array3
+# Reset lại con trỏ cho đúng yêu cầu
+la $s0, array2          # $s0 = con trỏ cho array2[i] (bắt đầu từ đầu)
+la $s1, array2 + 15     # $s1 = con trỏ cho array2[15-i] (bắt đầu từ cuối)
+la $s2, array3          # $s2 = con trỏ cho array3[i]
 
-    lw $t3, 0($s0)             # Load element from array1
-    lb $t7, 0($s1)             # Load element from array2
+loop3_correct:
+    beq $t2, $t6, end_loop3_correct   # Dừng khi $t2 (biến đếm i) == $t6 (size3 = 8)
 
-    add $t3, $t3, $t7           # Add elements
-    sw $t3, 0($s2)              # Store result in array3
+    # 1. Tải 2 giá trị byte từ array2
+    lb $t3, 0($s0)          # $t3 = array2[i]
+    lb $t7, 0($s1)          # $t7 = array2[15-i] (dùng $t7 để không ghi đè $t3)
 
-    addi $s0, $s0, 4            # Move to the next element in array1    
-    subi $s1, $s1, 1            # Move to the next element in array2
-    addi $s2, $s2, 8            # Move to the next element in array3
-    j loop3                     # Repeat the loop
-end_loop3:
+    # 2. Tính tổng
+    add $t3, $t3, $t7       # $t3 = $t3 + $t7 (Kết quả là 1 số nguyên)
 
-lw $t2, 0
+    # 3. Lưu kết quả (dưới dạng word 4-byte) vào array3
+    sw $t3, 0($s2)          # array3[i] = kết quả
 
-loop4:
-    beq $t2, $t6, end_loop4
+    # 4. Di chuyển các con trỏ
+    addi $s0, $s0, 1        # Tới array2[i+1] (nhảy 1 byte)
+    subi $s1, $s1, 1        # Tới array2[15-(i+1)] (lùi 1 byte)
+    addi $s2, $s2, 4        # Tới array3[i+1] (nhảy 4 bytes vì lưu word)
+    addi $t2, $t2, 1        # i++
+    
+    j loop3_correct
+end_loop3_correct:
 
-    lw $t3, 0($s2)              # Load element from array3
-    move $a0, $t3               # Move element to $a0 for printing
-    li $v0, 1                   # Print integer syscall
+# --- In array3 để kiểm tra kết quả ---
+li $t2, 0           # Reset biến đếm i = 0
+la $s2, array3      # Reset con trỏ $s2 về đầu array3
+
+loop4_print:
+    beq $t2, $t6, end_loop4_print # Dừng khi i == 8
+
+    # array3 bây giờ là mảng .word, nên ta dùng lw
+    lw $t3, 0($s2)            # Load kết quả (word 4 bytes) từ array3
+    move $a0, $t3
+    li $v0, 1
     syscall
-
-    li $a0, 32
+    
+    li $a0, 32                # In dấu cách
     li $v0, 11
     syscall
 
-    addi $s2, $s2, 8            # Move to the next element in array3
-    addi $t2, $t2, 1            # Increment counter
-    j loop4                     # Repeat the loop
-end_loop4:
+    addi $s2, $s2, 4          # Nhảy 4 bytes (sang kết quả tiếp theo)
+    addi $t2, $t2, 1          # i++
+    j loop4_print
+end_loop4_print:
+
+li $v0, 5
+syscall
+move $t9, $v0  # Lưu số nguyên vừa nhập vào $t9
+
+li $v0, 5
+syscall
+move $t8, $v0  # Lưu số nguyên vừa nhập vào $t8
+
+if:
+    beq $t9, 1, equal_one
+    beq $t9, 2, equal_two
+    beq $t9, 3, equal_three
+
+la $s0, array1      # Con trỏ array1
+la $s1, array2      # Con trỏ array2
+la $s2, array3      # Con trỏ array3 (sẽ dùng sau)
+li $t0, 0           # $t0 = biến đếm i cho loop1
+li $t1, 0           # $t1 = biến đếm i cho loop2
+li $t2, 0           # $t2 = biến đếm i cho loop3
+lw $t4, size1       # $t4 = 10
+lw $t5, size2       # $t5 = 16
+lw $t6, size3       # $t6 = 8
+
+equal_one:
+    add $s0, $t8, $zero
+    lw $t3, 0($s0)
+    move $a0, $t3
+    li $v0, 1
+    syscall
+    j end_if
+equal_two:
+    add $s1, $t8, $zero
+    lb $t3, 0($s1)
+    move $a0, $t3
+    li $v0, 1
+    syscall
+    j end_if
+equal_three:
+    add $s2, $t8, $zero
+    lw $t3, 0($s2)
+    move $a0, $t3
+    li $v0, 1
+    syscall
+    j end_if
+end_if:
+
+
+# --- Kết thúc chương trình ---
+li $v0, 10
+syscall

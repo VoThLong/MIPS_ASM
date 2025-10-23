@@ -11,11 +11,13 @@ int main()
 
     for (int i = 0; i < size3; i++)
     {
-        arr3[i] = arr1[i] + arr2[size2 - 1 - i];
+        arr3[i] = arr2[i] + arr2[size2 - 1 - i];
     }
 
     for (int i = 0; i < size3; i++)
     {
         printf("%d ", arr3[i]);
     }
+
+    return 0;
 }
