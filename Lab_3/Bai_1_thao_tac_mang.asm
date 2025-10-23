@@ -121,6 +121,10 @@ loop4_print:
     j loop4_print
 end_loop4_print:
 
+li $a0, 10      # In ký tự xuống dòng
+li $v0, 11
+syscall
+
 li $v0, 5
 syscall
 move $t9, $v0  # Lưu số nguyên vừa nhập vào $t9
@@ -129,37 +133,39 @@ li $v0, 5
 syscall
 move $t8, $v0  # Lưu số nguyên vừa nhập vào $t8
 
-if:
-    beq $t9, 1, equal_one
-    beq $t9, 2, equal_two
-    beq $t9, 3, equal_three
-
 la $s0, array1      # Con trỏ array1
 la $s1, array2      # Con trỏ array2
 la $s2, array3      # Con trỏ array3 (sẽ dùng sau)
 li $t0, 0           # $t0 = biến đếm i cho loop1
 li $t1, 0           # $t1 = biến đếm i cho loop2
 li $t2, 0           # $t2 = biến đếm i cho loop3
-lw $t4, size1       # $t4 = 10
-lw $t5, size2       # $t5 = 16
-lw $t6, size3       # $t6 = 8
+
+if:
+    beq $t9, 1, equal_one
+    beq $t9, 2, equal_two
+    beq $t9, 3, equal_three
+
 
 equal_one:
-    add $s0, $t8, $zero
+
+    sll $t7, $t8, 2        # $t7 = $t8 * 4 (vì array1 là .word)
+    add $s0, $s0, $t7       # Tính địa chỉ
     lw $t3, 0($s0)
     move $a0, $t3
     li $v0, 1
     syscall
     j end_if
 equal_two:
-    add $s1, $t8, $zero
+    sll $t7, $t8, 0        # $t7 = $t8 * 1 (vì array2 là .byte)
+    add $s1, $s1, $t7       # Tính địa chỉ
     lb $t3, 0($s1)
     move $a0, $t3
     li $v0, 1
     syscall
     j end_if
 equal_three:
-    add $s2, $t8, $zero
+    sll $t7, $t8, 2        # $t7 = $t8 * 4 (vì array3 là .word)
+    add $s2, $s2, $t7       # Tính địa chỉ
     lw $t3, 0($s2)
     move $a0, $t3
     li $v0, 1
