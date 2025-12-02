@@ -13,15 +13,17 @@ newline:      .asciiz "\n"
 .globl main
 main:
 
-    # Nhập n
-    li $v0, 4
-    la $a0, prompt_n
+    # Nhập xuất prompt nhập n
+    li $v0, 4 # addi $v0, $zero, 4
+    la $a0, prompt_n # addi $a0, $zero, prompt_n
     syscall
 
-    addi $v0, $zero, 5          # syscall đọc số nguyên
+    #nhập n
+    addi $v0, $zero, 5         # syscall đọc số nguyên
     syscall
     add $s0, $v0, $zero         # $s0 = n
 
+    # Kiểm tra n <= 100
     la $s1, array        # $s1 = &array[0]
     add $s2, $s1, $zero      # $s2 = $s1
     add $s3, $zero, $zero     # $s3 = i = 0
